@@ -1,8 +1,8 @@
 import urllib
 import urllib.request
-import cv2
+from cv2 import imread, imwrite
 import os
-import numpy as np
+from numpy import bitwise_xor
 from multiprocessing.dummy import Pool as ThreadPool 
 import itertools
 
@@ -16,33 +16,33 @@ def store_raw_images(paths, links):
         image_urls = str(urllib.request.urlopen(link).read())
         
         pool = ThreadPool(32)
-        pool.starmap(loadImage, zip(itertools.repeat(path),image_urls.split('\\n'),itertools.count(pic_num))) 
+        pool.starmap(load_image, zip(itertools.repeat(path),image_urls.split('\\n'),itertools.count(pic_num))) 
         pool.close() 
         pool.join()
                     
-def loadImage(path,link, counter):
+def load_image(path,link, counter):
     global pic_num
     if pic_num < counter:
-        pic_num = counter+1;
+        pic_num = counter+1
     try:                
         urllib.request.urlretrieve(link, path+"/"+str(counter)+".jpg")
-        img = cv2.imread(path+"/"+str(counter)+".jpg")             
+        img = imread(path+"/"+str(counter)+".jpg")             
         if img is not None:
-            cv2.imwrite(path+"/"+str(counter)+".jpg",img)
+            imwrite(path+"/"+str(counter)+".jpg",img)
             print(counter)
 
     except Exception as e:
         print(str(e))  
     
-def removeInvalid(dirPaths):
-    for dirPath in dirPaths:
-        for img in os.listdir(dirPath):
+def remove_invalid(dir_paths):
+    for dir_path in dir_paths:
+        for img in os.listdir(dir_path):
             for invalid in os.listdir('invalid'):
                 try:
-                    current_image_path = str(dirPath)+'/'+str(img)
-                    invalid = cv2.imread('invalid/'+str(invalid))
-                    question = cv2.imread(current_image_path)
-                    if invalid.shape == question.shape and not(np.bitwise_xor(invalid,question).any()):
+                    current_image_path = str(dir_path)+'/'+str(img)
+                    invalid = imread('invalid/'+str(invalid))
+                    question = imread(current_image_path)
+                    if invalid.shape == question.shape and not(bitwise_xor(invalid,question).any()):
                         os.remove(current_image_path)
                         break
 
@@ -63,7 +63,7 @@ def main():
     
     
     store_raw_images(paths, links)
-    removeInvalid(paths)
+    remove_invalid(paths)
 
 
 if __name__ == "__main__":
